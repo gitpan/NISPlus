@@ -1,4 +1,4 @@
-# $Id: Group.pm,v 1.4 1996/03/13 12:58:32 rik Exp $
+# $Id: Group.pm,v 1.5 1996/11/25 22:04:43 rik Exp $
 
 require Net::NISPlus::Object;
 
@@ -11,7 +11,7 @@ sub new
   my($name, $path) = @_;
   my($self) = {};
 
-  $path = Net::NISPlus::nis_local_group() if (! $path)
+  $path = Net::NISPlus::nis_local_group() if (! $path);
 
   bless $self;
 }

@@ -1,4 +1,4 @@
-#!/usr/local/bin/perl5
+#!/usr/local/bin/perl -w
 
 BEGIN { unshift(@INC, "../blib", "./blib"); }
 require Net::NISPlus::Table;

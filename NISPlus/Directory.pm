@@ -1,4 +1,4 @@
-# $Id: Directory.pm,v 1.4 1996/03/13 12:58:32 rik Exp $
+# $Id: Directory.pm,v 1.5 1996/11/25 22:04:43 rik Exp $
 
 require Net::NISPlus::Object;
 
@@ -34,7 +34,7 @@ sub list
   ($ret, @res) = Net::NISPlus::name_list($me->{'full_path'});
   if ($ret != 0)
   {
-    print "error: ", Net::NISPlus::nis_sperrno($ret), " ($ret)\n";
+    print "error: ", Net::NISPlus::nis_sperrno($ret), " ($ret)\n" if $Net::NISPLus::Debug;
     return ();
   }
   else

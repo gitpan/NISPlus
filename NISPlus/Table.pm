@@ -1,6 +1,7 @@
-# $Id: Table.pm,v 1.6 1996/05/12 13:51:15 rik Exp $
+# $Id: Table.pm,v 1.7 1996/11/25 22:04:43 rik Exp $
 
 require Net::NISPlus::Object;
+require Net::NISPlus::Entry;
 
 package Net::NISPlus::Table;
 
@@ -56,7 +57,7 @@ sub lookup
     $srchstring .= "],$me->{'full_path'}";
   }
 
-#print "lookup up $srchstring\n";
+#print "lookup up $srchstring\n" if $Net::NISPlus::Debug;
   ($ret, @res) = Net::NISPlus::entry_list($srchstring);
   if ($ret != 0)
   {
@@ -81,9 +82,11 @@ sub lookup
 sub list
 {
   my($me) = shift;
+  my($retobj) = shift;
   my($ret, @res);
 
-  ($ret, @res) = Net::NISPlus::entry_list($me->{'full_path'});
+  ($ret, @res) = Net::NISPlus::entry_list($me->{'full_path'},
+    $retobj ? $me : undef);
   if ($ret != 0)
   {
     warn("list error: ", Net::NISPlus::nis_sperrno($ret), " ($ret)\n");
@@ -105,7 +108,7 @@ and values being an integer representing the column's position.
 
 e.g.
 
-$table = Net::NISPLus::Table('hosts.org_dir');
+$table = Net::NISPlus::Table('hosts.org_dir');
 $cols = $table->colnames;
 
 will end up with $cols being:
@@ -117,7 +120,7 @@ $cols->{'comment'} = 3;
 
 and
 
-$table = Net::NISPLus::Table('hosts.org_dir');
+$table = Net::NISPlus::Table('hosts.org_dir');
 @cols = $table->colnames;
 
 will end up with @cols being:
@@ -166,6 +169,24 @@ sub colnames
   return($me->{'colnameshash'});
 }
 
+sub setinfo
+{
+  my($me) = shift;
+  my($info) = shift;
+  my($ret, $res);
+
+  ($ret, $res) = Net::NISPlus::table_setinfo($me->{'full_path'}, $info);
+  if ($ret != 0)
+  {
+    warn("setinfo error: ", Net::NISPlus::nis_sperrno($ret), " ($ret)\n");
+    return ();
+  }
+  else
+  {
+    return $res;
+  }
+}
+
 sub info
 {
   my($me) = shift;
@@ -190,23 +211,91 @@ null strings.
 
 $table->add('key1' => 'value1', 'key2' => 'value2');
 
+or
+
+$table->add(['key1' => 'key1', 'key2' => 'value2'],
+	['key1' => 'key3', 'key2' => 'value4'])
+
 =cut
 
 sub add
 {
-  my($me, %data) = @_;
   my($ret, $res);
+  my($me) = shift;
+  if (ref($_[0]) == "ARRAY")
+  {
+    my($names) = shift;
+    foreach $data (@_)
+    {
+      my(%data);
+      foreach $name ($[..$#{@$names})
+      {
+print " setting $names->[$name] to $data->[$name]\n" if $Net::NISPlus::Debug;
+        $data{$names->[$name]} = $data->[$name];
+      }
+print "adding\n" if $Net::NISPlus::Debug;
+      ($ret, $res) = Net::NISPlus::nis_add_entry($me->{'full_path'}, \%data);
+    }
+  }
+  else
+  {
+    my(%data) = @_;
+    ($ret, $res) = Net::NISPlus::nis_add_entry($me->{'full_path'}, \%data);
+  }
 
-  ($ret, $res) = Net::NISPlus::nis_add_entry($me->{'full_path'}, \%data);
   if ($ret != 0)
   {
     warn("add error: ", Net::NISPlus::nis_sperrno($ret), " ($ret)\n");
     return ();
   }
-  else
+  else { return $res; }
+}
+
+=head2 addinfo
+
+Add an entry to the table, setting the info variable as we go.  Any columns
+not specified will be set to null strings.
+
+$table->add([key1, key2],
+  ['values' => [ 'value1', 'value2' ],
+   'access' => access,
+   'domain' => domain,
+   'owner' => owner,
+   'group' => group],
+  [...])
+
+=cut
+
+sub addinfo
+{
+  my($ret, $res);
+  my($me) = shift;
+  my($names) = shift;
+
+  foreach $data (@_)
   {
-    return $res;
+    my(%data);
+    foreach $name ($[..$#{@$names})
+    {
+print " setting $names->[$name] to $data->{'values'}->[$name]\n" if $Net::NISPlus::Debug;
+      $data{$names->[$name]} = $data->{'values'}->[$name];
+    }
+print "adding ($me->{'full_path'})\n" if $Net::NISPlus::Debug;
+    ($ret, $res) = Net::NISPlus::nis_add_entry($me->{'full_path'},
+      \%data,
+      $data->{'owner'},
+      $data->{'group'},
+      $data->{'access'},
+      $data->{'ttl'},
+    );
   }
+
+  if ($ret != 0)
+  {
+    warn("add error: ", Net::NISPlus::nis_sperrno($ret), " ($ret)\n");
+    return ();
+  }
+  else { return $res; }
 }
 
 =head2 remove
@@ -228,7 +317,7 @@ sub remove
   foreach (keys %data) { $name .= "$_=$data{$_},"; }
   $name =~ s/,$//;
   $name .= "],$me->{'full_path'}";
-print "name=|$name|\n";
+print "name=|$name|\n" if $Net::NISPlus::Debug;
   ($ret) = Net::NISPlus::nis_remove_entry($name, 0);
   if ($ret != 0)
   {
@@ -259,7 +348,7 @@ sub removem
   foreach (keys %data) { $name .= "$_=$data{$_},"; }
   $name =~ s/,$//;
   $name .= "],$me->{'full_path'}";
-print "name=|$name|\n";
+print "name=|$name|\n" if $Net::NISPlus::Debug;
   ($ret) = Net::NISPlus::nis_remove_entry($name, 1);
   if ($ret != 0)
   {
@@ -307,7 +396,7 @@ sub modify
   foreach (keys %{$search}) { $name .= "$_=$search->{$_},"; }
   $name =~ s/,$//;
   $name .= "],$me->{'full_path'}";
-print "name=|$name|\n";
+print "name=|$name|\n" if $Net::NISPlus::Debug;
   ($ret) = Net::NISPlus::nis_modify_entry($name, $replace, 0);
   if ($ret != 0)
   {
@@ -327,81 +416,6 @@ sub chmod
 sub chown
 {
 }
-
-sub export
-{
-  my($me) = shift;
-  my($filename) = shift;
-
-  open(DUMP, ">$filename") || die "can't open $filename\n";
-  $info = $me->info();
-  print DUMP "table_name ", $me->{'full_path'};
-  print DUMP "name $info->{'name'}\n";
-  print DUMP "owner $info->{'owner'}\n";
-  print DUMP "group $info->{'group'}\n";
-  print DUMP "domain $info->{'domain'}\n";
-  print DUMP "access $info->{'access'}\n";
-  print DUMP "ttl $info->{'ttl'}\n";
-  print DUMP "type $info->{'type'}\n";
-  print DUMP "ta_type $info->{'ta_type'}\n";
-  print DUMP "ta_maxcol $info->{'ta_maxcol'}\n";
-  print DUMP "ta_sep $info->{'ta_sep'}\n";
-  print DUMP "ta_patch $info->{'ta_path'}\n";
-  @cols = @{$info->{'ta_cols'}};
-  foreach $col ($[..$#cols)
-  {
-    print DUMP "col $cols[$col] $info->{'ta_cols_flags'}->{$cols[$col]} ";
-    print DUMP "$info->{'ta_cols_rights'}->{$cols[$col]}\n";
-  }
-  foreach $ent ($me->list())
-  {
-    print DUMP "entry\n";
-#    $info
-    foreach $col ($[..$#cols)
-    {
-      print DUMP "field $cols[$col] ", length($ent->[$col]), "\n";
-      print DUMP "$ent->[$col]\n";
-    }
-  }
-  close(DUMP);
-}
-
-#sub import
-#{
-#  my($me) = shift;
-#  my($filename) = shift;
-#
-#  open(DUMP, "$filename") || die "can't open $filename\n";
-#  $info = $me->info();
-#  print "table_name ", $me->{'full_path'};
-#  print "name $info->{'name'}\n";
-#  print "owner $info->{'owner'}\n";
-#  print "group $info->{'group'}\n";
-#  print "domain $info->{'domain'}\n";
-#  print "access $info->{'access'}\n";
-#  print "ttl $info->{'ttl'}\n";
-#  print "type $info->{'type'}\n";
-#  print "ta_type $info->{'ta_type'}\n";
-#  print "ta_maxcol $info->{'ta_maxcol'}\n";
-#  print "ta_sep $info->{'ta_sep'}\n";
-#  print "ta_patch $info->{'ta_path'}\n";
-#  @cols = @{$info->{'ta_cols'}};
-#  foreach $col ($[..$#cols)
-#  {
-#    print "col $cols[$col] $info->{'ta_cols_flags'}->{$cols[$col]} ";
-#    print "$info->{'ta_cols_rights'}->{$cols[$col]}\n";
-#  }
-#  foreach $ent ($table->list())
-#  {
-#    print "entry\n";
-#    foreach $col ($[..$#cols)
-#    {
-#      print "field $cols[$col] ", length($ent->[$col]), "\n";
-#      print "$ent->[$col]\n";
-#    }
-#  }
-#  close(DUMP);
-#}
 
 sub DESTROY
 {

@@ -1,4 +1,4 @@
-#!/usr/local/bin/perl5
+#!/usr/local/bin/perl -w
 
 BEGIN { unshift(@INC, "../blib", "./blib"); }
 use Net::NISPlus::Directory;
@@ -161,4 +161,9 @@ sub common
   print "Access Rights : ", Net::NISPlus::rights2str($info->{'access'}), "\n";
   print "Time to Live  : ", Net::NISPlus::ttl2str($info->{'ttl'}), "\n";
   print "Object Type   : $info->{'type'}\n";
+}
+
+sub nevercalled
+{
+  $opt_v = $opt_P = 0;
 }

@@ -7,6 +7,8 @@ The object-oriented interface is used to simplify access to the NIS+
 databases.  See the example programs in the 't' subdirectory for
 examples on how to use the object-oriented interface.
 
+A 'tie'd interface is planned.
+
 There is only a small amount of pod documentation at this stage.
 
 INSTALLATION:
@@ -15,14 +17,14 @@ INSTALLATION:
 To compile the NISPlus package:
 
 1. Unpack the distribution file.  It will create its own directory.
-2. cd NISPlus-0.04-alpha
+2. cd NISPlus-0.05-alpha
 3. perl Makefile.PL
 4. make
 5. run some tests
    Notes:
      You may need to modify the test code for your site.
-     test.nistest will currently fail the 'indexed passwd test',
-       because I haven't finished implementing that part yet.
+     nistest will currently fail the 'indexed passwd test',
+     because I haven't finished implementing that part yet.
 
 when you are happy with the extension, you can type:
 
@@ -33,19 +35,23 @@ to install it on your system
 BUGS:
 ----
 
+The code has been tested on
+
+  perl5.001n under Solaris 2.4
+  perl5.003_22 under Solaris 2.4
+
 This is alpha code.  This means:
 
 a) the interfaces may change
 b) it may not even work for you
 
 Please report any bugs in the code or documentation to
-rik.harris@fulcrum.com.au.  There is a mailing list
-perl-nis@lists.fulcrum.com.au, which I encourage anyone using the alpha
-or beta versions of the NIS or NIS+ interfaces to subscribe to.  You
-can subscribe by sending the message 'subscribe perl-nis' in the body
-of a message to majordomo@lists.fulcrum.com.au.  The list is intended
-to be a discussion/announcement list for all things to do with the NIS
-and NIS+ perl extensions.
+perl-nis@lists.fulcrum.com.au.  I encourage anyone using the alpha or
+beta versions of the NIS or NIS+ interfaces to subscribe to the mailing
+lilst.  You can subscribe by sending the message 'subscribe perl-nis'
+in the body of a message to majordomo@lists.fulcrum.com.au.  The list
+is intended to be a discussion/announcement list for all things to do
+with the NIS and NIS+ perl extensions.
 
 have fun,
-rik.	(1996-05-12)
+rik.	(1997-01-26)

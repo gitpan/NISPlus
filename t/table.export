@@ -1,0 +1,47 @@
+#!/usr/local/bin/perl -w
+# $Id: table.export,v 1.2 1996/11/25 22:04:30 rik Exp $
+
+BEGIN { unshift(@INC, "../blib", "./blib"); }
+
+use Net::NISPlus::Table;
+use Data::Dumper;
+
+my($map) = shift;
+my($filename) = shift;
+
+open(DUMP, ">$filename") || die "can't open $filename\n";
+$me = Net::NISPlus::Table->new($map);
+$info = $me->info();
+$create="nistbladm -c $info->{'ta_type'}";
+$update = "";
+foreach $col ($[..$#{@{$info->{'ta_cols'}}})
+{
+  $create .= " $info->{'ta_cols'}->[$col]=";
+
+  $flags=$info->{'ta_cols_flags'}->{$info->{'ta_cols'}->[$col]};
+  if ($flags & &Net::NISPlus::TA_BINARY) { $create .= "B"; };
+  if ($flags & &Net::NISPlus::TA_SEARCHABLE) { $create .= "S"; };
+  if ($flags & &Net::NISPlus::TA_CASE) { $create .= "I"; };
+  if ($flags & &Net::NISPlus::TA_CRYPT) { $create .= "C"; };
+  if ($flags & &Net::NISPlus::TA_XDR) { $create .= "X"; };
+  foreach (qw(n o g w))
+  {
+    $update .= "nistbladm -u $info->{'ta_cols'}->[$col]=";
+    $update .= Net::NISPlus::rights2cmdstr(
+      $info->{'ta_cols_rights'}->{$info->{'ta_cols'}->[$col]}, $_).",";
+    $update =~ s/,$/ $map; /;
+  }
+}
+$create .= " $map.org_dir.".Net::NISPlus::nis_local_directory;
+print DUMP Data::Dumper->Dump([$info, $create, $update],
+  ['info', 'create', 'update']);
+$arr = [];
+foreach $ent ($me->list(1))
+{
+  push(@{$arr}, $ent->info());
+# table is no use exported
+  delete $arr->[$#{@$arr}]->{'table'};
+}
+print DUMP Data::Dumper->Dump([$arr], ['entinfo']);
+print DUMP Data::Dumper->Dump([[$me->list()]], ['entries']);
+close(DUMP);

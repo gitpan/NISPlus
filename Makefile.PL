@@ -1,4 +1,4 @@
-# $Id: Makefile.PL,v 1.6 1996/05/12 08:10:25 rik Exp $
+# $Id: Makefile.PL,v 1.7 1996/11/25 22:04:22 rik Exp $
 use ExtUtils::MakeMaker;
 
 WriteMakefile(
@@ -6,6 +6,7 @@ WriteMakefile(
 	'INC' => '',
 	'DISTNAME' => 'NISPlus',
 	'NAME' => 'Net::NISPlus',
-	'VERSION' => '0.04-alpha',
+	'VERSION' => '0.05-alpha',
 	'PMLIBDIRS' => [ 'NISPlus' ],
+	'dist' => { COMPRESS => 'gzip -9' }
 );

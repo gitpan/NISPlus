@@ -1,0 +1,21 @@
+#!/usr/local/bin/perl -w
+# $Id: table.import,v 1.2 1996/11/25 22:04:30 rik Exp $
+
+BEGIN { unshift(@INC, "../blib", "./blib"); }
+
+use Net::NISPlus::Table;
+use Data::Dumper;
+
+my($map) = shift;
+my($filename) = shift;
+
+open(DUMP, "<$filename") || die "can't open $filename\n";
+eval join(" ", <DUMP>);
+
+print "$create\n";
+system("$create");
+system("$update");
+$me = Net::NISPlus::Table->new($map);
+$me->setinfo($info);
+$me->addinfo($info->{'ta_cols'}, @{$entinfo});
+close(DUMP);

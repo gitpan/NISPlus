@@ -1,3 +1,4 @@
+CHANGES
 MANIFEST
 Makefile.PL
 NISPlus.pm
@@ -6,7 +7,9 @@ NISPlus/Directory.pm
 NISPlus/Group.pm
 NISPlus/Object.pm
 NISPlus/Table.pm
+NISPlus/Entry.pm
 README
+TODO
 t/niscat
 t/nistest
 t/table.add
@@ -16,4 +19,6 @@ t/table.list
 t/table.modify
 t/table.remove
 t/test.niscat
+t/table.export
+t/table.import
 typemap

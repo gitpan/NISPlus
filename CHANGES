@@ -1,0 +1,27 @@
+**** Version 0.05 alpha released
+
+added $Net::NISPlus::Debug variable to control output of
+informational/testing messages
+
+added t/table.export and t/table.import (still does some cheating by
+calling nistbladm for import)
+
+added Net::NISPlus::Table::setinfo for setting table info
+
+removed old export/import functions from Net::NISPlus::Table
+
+added Net::NISPlus::rights2cmdstr for export
+
+added Net::NISPlus::Entry object for entry manipulation
+
+can now retrieve all information about an individual entry (owner, ttls, etc)
+
+added Net::NISPlus::nis_ismember
+
+can now pass owner, group, access, ttl to Net::NISPlus::nis_add_entry
+
+added Net::NISPlus::entry_setinfo for setting entry info
+
+added Net::NISPlus::table_setinfo for setting table info
+
+**** Version 0.04 alpha released

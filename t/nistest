@@ -1,4 +1,4 @@
-#!/usr/local/bin/perl5
+#!/usr/local/bin/perl -w
 
 BEGIN { unshift(@INC, "../blib", "./blib"); }
 require Net::NISPlus;
@@ -15,15 +15,11 @@ print "nis_local_directory: ", Net::NISPlus::nis_local_directory(), "\n";
 print "nis_local_host: ", Net::NISPlus::nis_local_host(), "\n";
 print "nis_local_group: ", Net::NISPlus::nis_local_group(), "\n";
 print "nis_local_principal: ", Net::NISPlus::nis_local_principal(), "\n";
-print "obj_type: ", Net::NISPlus::nis_local_directory(), " ",
+print "obj_type: ", Net::NISPlus::nis_local_directory(), "/",
   Net::NISPlus::obj_type(Net::NISPlus::nis_local_directory()), "\n";
-print "obj_type: ", Net::NISPlus::nis_local_host(), " ",
-  Net::NISPlus::obj_type(Net::NISPlus::nis_local_host()), "\n";
-print "obj_type: ", Net::NISPlus::nis_local_principal(), " ",
-  Net::NISPlus::obj_type(Net::NISPlus::nis_local_principal()), "\n";
-print "obj_type: org_dir.", Net::NISPlus::nis_local_directory(), " ",
+print "obj_type: org_dir.", Net::NISPlus::nis_local_directory(), "/",
   Net::NISPlus::obj_type("org_dir.".Net::NISPlus::nis_local_directory()), "\n";
-print "obj_type: passwd.org_dir.", Net::NISPlus::nis_local_directory(), " ",
+print "obj_type: passwd.org_dir.", Net::NISPlus::nis_local_directory(), "/",
   Net::NISPlus::obj_type("passwd.org_dir.".Net::NISPlus::nis_local_directory()), "\n";
 
 #foreach $ret (1..100)
@@ -33,7 +29,7 @@ print "obj_type: passwd.org_dir.", Net::NISPlus::nis_local_directory(), " ",
 
 print join("\n", Net::NISPlus::name_list("org_dir.fulcrum.com.au.")), "\n";
 
-foreach $name (Net::NISPlus::nis_getnames($ARGV[0]))
+foreach $name (Net::NISPlus::nis_getnames("passwd"))
 {
   print "getnames: $name \n";
 }
@@ -47,7 +43,7 @@ while (!$ret)
   }
   else
   {
-    foreach $obj (@data) { print "nis_obj: ", join(":", @{$obj}), "\n"; }
+    foreach $obj (@data) { print "nis_obj: ", join(":", @{$obj->{'values'}}), "\n"; }
   }
   ($ret, $cookie, @data) = Net::NISPlus::nis_next_entry($map, $cookie);
 }

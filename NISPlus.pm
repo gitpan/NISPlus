@@ -1,4 +1,4 @@
-# $Id: NISPlus.pm,v 1.4 1996/03/13 12:49:58 rik Exp rik $
+# $Id: NISPlus.pm,v 1.5 1996/11/25 22:04:22 rik Exp $
 
 package Net::NISPlus;
 
@@ -13,33 +13,35 @@ require AutoLoader;
 @EXPORT = qw(
 );
 
-sub AUTOLOAD {
-    # This AUTOLOAD is used to 'autoload' constants from the constant()
-    # XS function.  If a constant is not found then control is passed
-    # to the AUTOLOAD in AutoLoader.
-
-    local($constname);
-    ($constname = $AUTOLOAD) =~ s/.*:://;
-    $val = constant($constname, @_ ? $_[0] : 0);
-    if ($! != 0) {
-	if ($! =~ /Invalid/) {
-	    $AutoLoader::AUTOLOAD = $AUTOLOAD;
-	    goto &AutoLoader::AUTOLOAD;
-	}
-	else {
-	    ($pack,$file,$line) = caller;
-	    die "Your vendor has not defined $pack macro $constname, used at $file line $line.
-";
-	}
-    }
-    eval "sub $AUTOLOAD { $val }";
-    goto &$AUTOLOAD;
-}
+#sub AUTOLOAD {
+#    # This AUTOLOAD is used to 'autoload' constants from the constant()
+#    # XS function.  If a constant is not found then control is passed
+#    # to the AUTOLOAD in AutoLoader.
+#
+#    local($constname);
+#    ($constname = $AUTOLOAD) =~ s/.*:://;
+#    $val = constant($constname, @_ ? $_[0] : 0);
+#    if ($! != 0) {
+#	if ($! =~ /Invalid/) {
+#	    $AutoLoader::AUTOLOAD = $AUTOLOAD;
+#	    goto &AutoLoader::AUTOLOAD;
+#	}
+#	else {
+#	    ($pack,$file,$line) = caller;
+#	    die "Your vendor has not defined $pack macro $constname, used at $file line $line.
+#";
+#	}
+#    }
+#    eval "sub $AUTOLOAD { $val }";
+#    goto &$AUTOLOAD;
+#}
 
 bootstrap Net::NISPlus;
 
 # Preloaded methods go here.  Autoload methods go after __END__, and are
 # processed by the autosplit program.
+
+$Debug = 0;
 
 sub rights2str
 {
@@ -50,6 +52,25 @@ sub rights2str
   foreach $i ($[..$#b)
   {
     $ret.= $b[$i] ? $a[$i] : "-";
+  }
+  $ret;
+}
+
+sub rights2cmdstr
+{
+  my($val) = pack("N", shift);
+  my($type) = shift;
+  my($ret)="$type=";
+  my(@a)=split(//, "rmcdrmcdrmcdrmcd");
+  my(@b);
+  if ($type eq "n") { @b = (split(//, (unpack("b32", $val))))[0..3]; };
+  if ($type eq "o") { @b = (split(//, (unpack("b32", $val))))[8..11]; };
+  if ($type eq "g") { @b = (split(//, (unpack("b32", $val))))[16..19]; };
+  if ($type eq "w") { @b = (split(//, (unpack("b32", $val))))[24..27]; };
+  
+  foreach $i ($[..$#b)
+  {
+    $ret .= $b[$i] ? $a[$i] : "";
   }
   $ret;
 }

@@ -1,4 +1,4 @@
-/* $Id: NISPlus.xs,v 1.10 1996/05/12 08:09:49 rik Exp rik $ */
+/* $Id: NISPlus.xs,v 1.13 1997/01/26 12:43:50 rik Exp $ */
 
 #include "EXTERN.h"
 #include "perl.h"
@@ -200,16 +200,10 @@ int	arg;
   }
 #endif
 #ifdef TA_MODIFIED
-  if (strEQ(name, "TA_MODIFIED"))
-  {
-    return TA_MODIFIED;
-  }
+  if (strEQ(name, "TA_MODIFIED")) return TA_MODIFIED;
 #endif
 #ifdef TA_ASN1
-  if (strEQ(name, "TA_ASN1"))
-  {
-    return TA_ASN1;
-  }
+  if (strEQ(name, "TA_ASN1")) return TA_ASN1;
 #endif
 
   errno = EINVAL;
@@ -226,7 +220,7 @@ nis_name	path;
 {
   nis_result	*res;
 
-  res = nis_lookup(path, 0);
+  res = nis_lookup(path, MASTER_ONLY);
   switch (NIS_RES_NUMOBJ(res))
   {
     case 1:
@@ -322,41 +316,91 @@ nis_result	*res;
   printf("cticks: %lu\n", res->cticks);
 }
 
-#define NISRESULT_ENTRY(RES) do						\
-{									\
-  u_int			num, num2;					\
-  struct entry_obj	*entry;						\
-									\
-  EXTEND(sp, NIS_RES_NUMOBJ(RES));					\
-									\
-  for (num=0; num<NIS_RES_NUMOBJ(RES); num++)				\
-  {									\
-    AV	*nisentry = newAV();						\
-									\
-    if (NIS_RES_OBJECT(RES)[num].zo_data.zo_type != ENTRY_OBJ)		\
-    {									\
-      croak("not an entry object in nisresult_entry");			\
-    }									\
-									\
-    entry = &NIS_RES_OBJECT(RES)[num].EN_data;				\
-									\
-    for (num2=0; num2<entry->en_cols.en_cols_len; num2++)		\
-    {									\
-      if (entry->en_cols.en_cols_val[num2].ec_value.ec_value_len > 0)	\
-      {									\
-        av_push(nisentry, newSVpv(					\
-          entry->en_cols.en_cols_val[num2].ec_value.ec_value_val,	\
-          entry->en_cols.en_cols_val[num2].ec_value.ec_value_len-1));	\
-      }									\
-      else								\
-      {									\
-        av_push(nisentry, &sv_undef);	 				\
-      }									\
-    }									\
-									\
-    PUSHs(newRV((SV *)nisentry));					\
-  }									\
+#define NISRESULT_ENTRY(RES) do				\
+{							\
+  AV	*av;						\
+  u_int	num;						\
+							\
+  EXTEND(sp, NIS_RES_NUMOBJ(RES));			\
+  av = nisresult_entry(RES, tableref);			\
+  for (num=0; num<=av_len(av); num++)			\
+  {							\
+    PUSHs((SV *) newSVsv(*av_fetch(av, num, 0)));	\
+  }							\
+  av_undef(av);						\
 } while(0)
+
+AV	*nisresult_entry(res, tableref)
+nis_result	*res;
+SV		*tableref;
+{
+  u_int			num, num2;
+  AV			*ret = newAV();
+  char			buf[256];
+  struct entry_obj	*entry;
+  char			*ch;
+
+  for (num=0; num<NIS_RES_NUMOBJ(res); num++)
+  {
+    AV	*nisentry = newAV();
+
+    if (NIS_RES_OBJECT(res)[num].zo_data.zo_type != ENTRY_OBJ)
+    {
+      croak("not an entry object in nisresult_entry");
+    }
+
+    entry = &NIS_RES_OBJECT(res)[num].EN_data;
+
+    for (num2=0; num2<entry->en_cols.en_cols_len; num2++)
+    {
+      if (entry->en_cols.en_cols_val[num2].ec_value.ec_value_len > 0)
+      {
+        av_push(nisentry, newSVpv(
+          entry->en_cols.en_cols_val[num2].ec_value.ec_value_val,
+          entry->en_cols.en_cols_val[num2].ec_value.ec_value_len-1));
+      }
+      else
+      {
+        av_push(nisentry, &sv_undef);	 
+      }
+    }
+
+    if (tableref != &sv_undef)
+    {
+      /* Create an object in the Entry table */
+      HV	*hv = newHV();
+      HV	*stash;
+      SV	*rhv;
+
+      hv_store(hv, "table", 5, newSVsv(tableref), 0);
+      hv_store(hv, "values", 6, newRV((SV *)nisentry), 0);
+      sprintf(buf, "%8lx%8lx",
+        NIS_RES_OBJECT(res)[num].zo_oid.ctime,
+        NIS_RES_OBJECT(res)[num].zo_oid.mtime);
+      hv_store(hv, "oid", 3, newSVpv(buf, strlen(buf)), 0);
+      ch = NIS_RES_OBJECT(res)[num].zo_name;
+      hv_store(hv, "name", 4, newSVpv(ch, strlen(ch)), 0);
+      ch = NIS_RES_OBJECT(res)[num].zo_owner;
+      hv_store(hv, "owner", 5, newSVpv(ch, strlen(ch)), 0);
+      ch = NIS_RES_OBJECT(res)[num].zo_group;
+      hv_store(hv, "group", 5, newSVpv(ch, strlen(ch)), 0);
+      ch = NIS_RES_OBJECT(res)[num].zo_domain;
+      hv_store(hv, "domain", 6, newSVpv(ch, strlen(ch)), 0);
+      hv_store(hv, "access", 6, newSViv(NIS_RES_OBJECT(res)[num].zo_access),0);
+      hv_store(hv, "ttl", 3, newSViv(NIS_RES_OBJECT(res)[num].zo_ttl), 0);
+      rhv = newRV((SV *)hv);
+      if ((stash = gv_stashpv("Net::NISPlus::Entry", TRUE)) == NULL)
+        croak("can't find Net::NISPlus::Entry\n");
+      sv_bless(rhv, stash);
+      av_push(ret, rhv);
+    }
+    else
+    {
+      av_push(ret, newRV((SV *)nisentry));
+    }
+  }
+  return(ret);
+}
 
 #define NISRESULT_NAMES(RES) do						\
 {									\
@@ -384,9 +428,8 @@ nis_result	*res;
   char		buf[256];
   nis_object	*object;
   SV		*type;
-  HV		*ret;
-  
-  ret = newHV();
+  HV		*ret = newHV();
+
   object = NIS_RES_OBJECT(res);
   sprintf(buf, "%8lx%8lx", object->zo_oid.ctime, object->zo_oid.mtime);
   hv_store(ret, "oid", 3, newSVpv(buf, strlen(buf)), 0);
@@ -519,7 +562,7 @@ int		add;
   for (pos=0; pos<ta->ta_cols.ta_cols_len; pos++)
   {
     val = hv_fetch((HV *)SvRV(data), ta->ta_cols.ta_cols_val[pos].tc_name,
-      strlen(ta->ta_cols.ta_cols_val[pos].tc_name), 0);
+      strlen(ta->ta_cols.ta_cols_val[pos].tc_name), FALSE);
     set = 0;
     if (val != (SV **)NULL)
     {
@@ -533,6 +576,11 @@ int		add;
         ENTRY_VAL(entry, pos)[l] = '\0';
         ENTRY_LEN(entry, pos) = l+1;
         entry->EN_data.en_cols.en_cols_val[pos].ec_flags = EN_MODIFIED;
+        entry->EN_data.en_cols.en_cols_val[pos].ec_flags = EN_MODIFIED;
+        if (ta->ta_cols.ta_cols_val[pos].tc_flags == TA_CRYPT)
+        {
+          entry->EN_data.en_cols.en_cols_val[pos].ec_flags |= EN_MODIFIED;
+        }
         set++;
       }
     }
@@ -546,6 +594,123 @@ int		add;
       }
     }
   }
+}
+
+void	setinfo(data, object)
+SV		*data;
+nis_object	*object;
+{
+  HV		*hdata;
+  SV		**sv;
+
+warn("successful\n");
+  if (!SvROK(data) || SvTYPE(SvRV(data)) != SVt_PVHV)
+    croak("setinfo requires hash reference as second argument\n");
+  
+  hdata = (HV *)SvRV(data);
+  if ((sv = hv_fetch(hdata, "name", 4, FALSE)) != (SV **)NULL)
+{
+warn("changing name to %s\n", SvPV(*sv, na));
+    object->zo_name = strdup(SvPV(*sv, na));
+}
+  if ((sv = hv_fetch(hdata, "owner", 5, FALSE)) != (SV **)NULL)
+{
+warn("changing owner to %s\n", SvPV(*sv, na));
+    object->zo_owner = strdup(SvPV(*sv, na));
+}
+  if ((sv = hv_fetch(hdata, "group", 5, FALSE)) != (SV **)NULL)
+{
+warn("changing group to %s\n", SvPV(*sv, na));
+    object->zo_group = strdup(SvPV(*sv, na));
+}
+  if ((sv = hv_fetch(hdata, "domain", 6, FALSE)) != (SV **)NULL)
+{
+warn("changing domain to %s\n", SvPV(*sv, na));
+    object->zo_domain = strdup(SvPV(*sv, na));
+}
+  if ((sv = hv_fetch(hdata, "access", 6, FALSE)) != (SV **)NULL)
+{
+warn("changing access to %lu\n", SvIV(*sv));
+    object->zo_access = SvIV(*sv);
+}
+  if ((sv = hv_fetch(hdata, "ttl", 3, FALSE)) != (SV **)NULL)
+{
+warn("changing ttl to %lu\n", SvIV(*sv));
+    object->zo_ttl = SvIV(*sv);
+}
+  switch (object->zo_data.zo_type)
+  {
+    case BOGUS_OBJ:
+      break;
+    case NO_OBJ:
+      break;
+    case DIRECTORY_OBJ:
+      break;
+    case GROUP_OBJ:                
+      break;
+    case TABLE_OBJ:      
+    {
+      HV		*colflags=(HV *)NULL, *colrights=(HV *)NULL;
+      AV		*cols=(AV *)NULL;
+      int		col;
+      char		*colname;
+      unsigned char	sep[1];
+
+      if ((sv = hv_fetch(hdata, "ta_maxcol", 9, FALSE)) != (SV **)NULL)
+        if (SvIV(*sv) != object->TA_data.ta_maxcol)
+          croak("number of columns %d must match table %d\n",
+            SvIV(*sv), object->TA_data.ta_maxcol);
+warn("changing sep to %d\n",  *SvPV(*sv, na));
+      if ((sv = hv_fetch(hdata, "ta_sep", 6, FALSE)) != (SV **)NULL)
+        object->TA_data.ta_sep = *SvPV(*sv, na);
+      if ((sv = hv_fetch(hdata, "ta_cols", 7, FALSE)) != (SV **)NULL)
+      {
+        cols = (AV *)SvRV(*sv);
+        if (av_len(cols)+1 != object->TA_data.ta_maxcol)
+          croak("number of columns in ta_cols %d must match table %d\n",
+            av_len(cols)+1, object->TA_data.ta_maxcol);
+      }
+      if ((sv = hv_fetch(hdata, "ta_cols_flags", 13, FALSE)) != (SV **)NULL)
+        colflags = (HV *)SvRV(*sv);
+      if ((sv = hv_fetch(hdata, "ta_cols_rights", 14, FALSE)) !=(SV **)NULL)
+        colrights = (HV *)SvRV(*sv);
+
+      for (col=0; col<object->TA_data.ta_cols.ta_cols_len; col++)
+      {
+        if (cols)
+          object->TA_data.ta_cols.ta_cols_val[col].tc_name =
+            strdup(SvPV(*av_fetch(cols, col, 0), na));
+        colname = object->TA_data.ta_cols.ta_cols_val[col].tc_name;
+warn("colname = %s\n", colname);
+        if (colrights &&
+          (sv = hv_fetch(colrights, colname, strlen(colname), FALSE))
+            != (SV **)NULL)
+{
+          object->TA_data.ta_cols.ta_cols_val[col].tc_rights = SvIV(*sv);
+warn("set rights to = %lu\n", object->TA_data.ta_cols.ta_cols_val[col].tc_rights);
+}
+        if (colflags &&
+          (sv = hv_fetch(colflags, colname, strlen(colname), FALSE))
+            != (SV **)NULL)
+{
+          object->TA_data.ta_cols.ta_cols_val[col].tc_flags = SvIV(*sv);
+warn("set flags to = %lu\n", object->TA_data.ta_cols.ta_cols_val[col].tc_flags);
+}
+      }
+      if ((sv = hv_fetch(hdata, "ta_path", 7, FALSE)) != (SV **)NULL)
+        object->TA_data.ta_path = strdup(SvPV(*sv, na));
+      break;
+    }
+    case ENTRY_OBJ:
+      break;
+    case LINK_OBJ:
+      break;
+    case PRIVATE_OBJ:
+      break;
+    default:
+      break;
+  }
+  return;
 }
 
 MODULE = Net::NISPlus	PACKAGE = Net::NISPlus
@@ -601,10 +766,19 @@ nis_local_group()
 nis_name
 nis_local_principal()
 
+bool_t
+nis_ismember(name1, name2)
+  nis_name    name1
+  nis_name    name2
+
 void
-nis_add_entry(name, data)
+nis_add_entry(name, data, owner, group, access, ttl)
   nis_name	name
   SV *		data
+  nis_name	owner
+  nis_name	group
+  unsigned long	access
+  unsigned long	ttl
   PPCODE:
   {
     nis_result	*table;
@@ -617,11 +791,12 @@ nis_add_entry(name, data)
     {
       fill_entry(table, &entry, data, 1);
       entry.zo_name = "";
-      entry.zo_owner = nis_local_principal();
-      entry.zo_group = nis_local_group();
+      entry.zo_owner = owner;
+      entry.zo_group = group;
       entry.zo_domain = "";
-      entry.zo_access = DEFAULT_RIGHTS;
-      entry.zo_ttl = NIS_RES_OBJECT(table)[0].zo_ttl;
+      entry.zo_access = access;
+      if (ttl == 0) ttl = NIS_RES_OBJECT(table)[0].zo_ttl;
+      entry.zo_ttl = ttl;
       if ((res = nis_add_entry(name, &entry, 0)) == (nis_result *)NULL)
         XPUSHs(sv_newmortal());
       else
@@ -746,8 +921,9 @@ name_list(name)
 
 # return an array of the contents of the table entries
 void
-entry_list(name)
+entry_list(name, tableref)
   nis_name	name
+  SV *		tableref
   PPCODE:
   {
     nis_result	*res;
@@ -773,6 +949,7 @@ nis_first_entry(name)
   {
     nis_result	*res;
     u_int	num;
+    SV		*tableref=NULL;
     
     res=nis_first_entry(name);
 
@@ -797,6 +974,7 @@ nis_next_entry(name, cookie)
   {
     nis_result	*res;
     u_int	num;
+    SV		*tableref=NULL;
     
     res=nis_next_entry(name, &cookie);
 
@@ -823,9 +1001,26 @@ nis_perror(status, label)
   char *	label
 
 void
-nis_lerrnor(status, label)
+nis_lerror(status, label)
   nis_error	status
   char *	label
+
+void
+entry_info(path)
+  nis_name	path
+  PPCODE:
+  {
+    nis_result	*res;
+
+    res = lookup(path);
+    if (res == (nis_result *)NULL) XPUSHs(sv_newmortal());
+    else
+    {
+      XPUSHs(sv_2mortal(newSViv(res->status)));
+      XPUSHs(sv_2mortal(newRV((SV *)nisresult_info(res))));
+      nis_freeresult(res);
+    }
+  }
 
 void
 table_info(path)
@@ -840,6 +1035,60 @@ table_info(path)
     {
       XPUSHs(sv_2mortal(newSViv(res->status)));
       XPUSHs(sv_2mortal(newRV((SV *)nisresult_info(res))));
+      nis_freeresult(res);
+    }
+  }
+
+void
+entry_setinfo(name, data)
+  nis_name	name
+  SV *          data
+  PPCODE:
+  {
+    nis_result	*res, *res2;
+
+ warn("looking up %s\n", name);
+    res = nis_list(name, MASTER_ONLY, (int(*)())NULL, (void *)NULL);
+    if (res == (nis_result *)NULL) XPUSHs(sv_newmortal());
+    else
+    {
+      setinfo(data, NIS_RES_OBJECT(res));
+
+      if ((res2 = nis_modify_entry(name, NIS_RES_OBJECT(res), MOD_SAMEOBJ))
+        == (nis_result *)NULL)
+        XPUSHs(sv_newmortal());
+      else
+      {
+        XPUSHs(sv_2mortal(newSViv(res2->status)));
+        nis_freeresult(res2);
+      }
+      nis_freeresult(res);
+    }
+  }
+
+void
+table_setinfo(path, data)
+  nis_name	path
+  SV *          data
+  PPCODE:
+  {
+    nis_result	*res, *res2;
+    SV		**sv;
+
+ warn("looking up %s\n", path);
+    res = lookup(path);
+    if (res == (nis_result *)NULL) XPUSHs(sv_newmortal());
+    else
+    {
+      setinfo(data, NIS_RES_OBJECT(res));
+
+      if ((res2 = nis_modify(path, NIS_RES_OBJECT(res))) == (nis_result *)NULL)
+        XPUSHs(sv_newmortal());
+      else
+      {
+        XPUSHs(sv_2mortal(newSViv(res2->status)));
+        nis_freeresult(res2);
+      }
       nis_freeresult(res);
     }
   }
