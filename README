@@ -7,7 +7,7 @@ The object-oriented interface is used to simplify access to the NIS+
 databases.  See the example programs in the 't' subdirectory for
 examples on how to use the object-oriented interface.
 
-There is no pod documentation at this stage.
+There is only a small amount of pod documentation at this stage.
 
 INSTALLATION:
 ------------
@@ -15,10 +15,14 @@ INSTALLATION:
 To compile the NISPlus package:
 
 1. Unpack the distribution file.  It will create its own directory.
-2. cd NISPlus-a2
+2. cd NISPlus-0.04-alpha
 3. perl Makefile.PL
 4. make
-5. run some tests (you will need to modify the test code for your site)
+5. run some tests
+   Notes:
+     You may need to modify the test code for your site.
+     test.nistest will currently fail the 'indexed passwd test',
+       because I haven't finished implementing that part yet.
 
 when you are happy with the extension, you can type:
 
@@ -44,4 +48,4 @@ to be a discussion/announcement list for all things to do with the NIS
 and NIS+ perl extensions.
 
 have fun,
-rik.	(1995-11-10)
+rik.	(1996-05-12)

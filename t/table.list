@@ -9,7 +9,7 @@ $dir = Net::NISPlus::Directory->new();
 foreach ($dir->list())
 {
   print $_, "\n";
-  $table = Net::NISPlus::Table->new("$_.org_dir.fulcrum.com.au.");
+  $table = Net::NISPlus::Table->new("$_");
   if ($table)
   {
     $info = $table->info();

@@ -1,0 +1,26 @@
+#!/bin/sh
+
+DIR=`dirname $0`
+if [ "$DIR" != "" ]; then
+  DIR="$DIR/"
+fi
+
+for i in passwd hosts cred; do
+  echo "$i test #1 ... \c"
+  ${DIR}niscat $i | sort > /tmp/.perl 2>/dev/null
+  /usr/bin/niscat $i | sort > /tmp/.system 2>/dev/null
+  diff /tmp/.perl /tmp/.system > /dev/null && echo ok || echo failed
+  echo "$i test #2 ... \c"
+  ${DIR}niscat -o $i | sort > /tmp/.perl 2>/dev/null
+  /usr/bin/niscat -o $i | sort > /tmp/.system 2>/dev/null
+  diff /tmp/.perl /tmp/.system > /dev/null && echo ok || echo failed
+  echo "$i test #3 ... \c"
+  ${DIR}niscat -h $i | sort > /tmp/.perl 2>/dev/null
+  /usr/bin/niscat -h $i | sort > /tmp/.system 2>/dev/null
+  diff /tmp/.perl /tmp/.system > /dev/null && echo ok || echo failed
+done
+
+echo "indexed passwd test #1 ... \c"
+${DIR}niscat -o '[name=rik],passwd' | sort > /tmp/.perl 2>/dev/null
+/usr/bin/niscat -o '[name=rik],passwd' | sort > /tmp/.system 2>/dev/null
+diff /tmp/.perl /tmp/.system > /dev/null && echo ok || echo failed

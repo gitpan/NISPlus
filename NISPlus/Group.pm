@@ -1,6 +1,6 @@
-# $Id: Group.pm,v 1.3 1995/11/09 06:31:43 rik Exp $
+# $Id: Group.pm,v 1.4 1996/03/13 12:58:32 rik Exp $
 
-require Net::NISPlus;
+require Net::NISPlus::Object;
 
 package Net::NISPlus::Group;
 
@@ -9,6 +9,7 @@ package Net::NISPlus::Group;
 sub new
 {
   my($name, $path) = @_;
+  my($self) = {};
 
   $path = Net::NISPlus::nis_local_group() if (! $path)
 

@@ -3,7 +3,7 @@
 BEGIN { unshift(@INC, "../blib", "./blib"); }
 require Net::NISPlus::Table;
 
-$test = Net::NISPlus::Table->new("test.org_dir.fulcrum.com.au.");
+$test = Net::NISPlus::Table->new("test");
 foreach ('a'..'z')
 {
   print "adding key=$_ value=$_\n";

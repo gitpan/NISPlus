@@ -1,4 +1,4 @@
-# $Id: Object.pm,v 1.3 1995/11/09 06:31:43 rik Exp $
+# $Id: Object.pm,v 1.4 1996/03/13 12:58:32 rik Exp $
 
 require Net::NISPlus;
 
@@ -17,7 +17,7 @@ sub object
 
   if (! $me->{'object'})
   {
-    if ( ! $me->{'object'} = Net::NISPlus::nis_lookup($me->{'full_path'}))
+    if ( !($me->{'object'} = Net::NISPlus::nis_lookup($me->{'full_path'})))
     {
       die "can't look up object $me->{'full_path'}: ",
         Net::NISPlus::nis_sperrno(Net::NISPlus::last_error);

@@ -4,4 +4,8 @@ BEGIN { unshift(@INC, "../blib", "./blib"); }
 require Net::NISPlus::Table;
 
 $test = Net::NISPlus::Table->new("test");
-$test->clear();
+foreach ('j'..'m')
+{
+  print "modifying key=$_\n";
+  $test->modify({'key' => $_},{'value' => 'rik'});
+}

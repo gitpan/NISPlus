@@ -1,4 +1,4 @@
-# $Id: Makefile.PL,v 1.4 1995/10/15 05:22:04 rik Exp $
+# $Id: Makefile.PL,v 1.6 1996/05/12 08:10:25 rik Exp $
 use ExtUtils::MakeMaker;
 
 WriteMakefile(
@@ -6,6 +6,6 @@ WriteMakefile(
 	'INC' => '',
 	'DISTNAME' => 'NISPlus',
 	'NAME' => 'Net::NISPlus',
-	'VERSION' => 'a2',
+	'VERSION' => '0.04-alpha',
 	'PMLIBDIRS' => [ 'NISPlus' ],
 );
