@@ -1,0 +1,7 @@
+#!/usr/local/bin/perl5
+
+BEGIN { unshift(@INC, "../blib", "./blib"); }
+require Net::NISPlus::Table;
+
+$test = Net::NISPlus::Table->new("test.org_dir.fulcrum.com.au.");
+$test->clear();

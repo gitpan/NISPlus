@@ -1,0 +1,11 @@
+#!/usr/local/bin/perl5
+
+BEGIN { unshift(@INC, "../blib", "./blib"); }
+require Net::NISPlus::Table;
+
+$test = Net::NISPlus::Table->new("test.org_dir.fulcrum.com.au.");
+foreach ('j'..'m')
+{
+  print "removing key=$_\n";
+  $test->remove('key' => $_);
+}

@@ -1,0 +1,16 @@
+MANIFEST
+README
+Makefile.PL
+NISPlus.pm
+NISPlus.xs
+typemap
+NISPlus/Directory.pm
+NISPlus/Group.pm
+NISPlus/Object.pm
+NISPlus/Table.pm
+t/nistest
+t/table.add
+t/table.clear
+t/table.colnames
+t/table.list
+t/table.remove

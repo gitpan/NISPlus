@@ -1,0 +1,11 @@
+#!/usr/local/bin/perl5
+
+BEGIN { unshift(@INC, "../blib", "./blib"); }
+require Net::NISPlus::Table;
+
+$test = Net::NISPlus::Table->new("test.org_dir.fulcrum.com.au.");
+foreach ('a'..'z')
+{
+  print "adding key=$_ value=$_\n";
+  $test->add('key' => $_, 'value' => $_);
+}
