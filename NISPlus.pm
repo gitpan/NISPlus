@@ -1,4 +1,4 @@
-# $Id: NISPlus.pm,v 1.5 1996/11/25 22:04:22 rik Exp $
+# $Id: NISPlus.pm,v 1.7 1997/04/25 12:51:41 rik Exp rik $
 
 package Net::NISPlus;
 
@@ -13,35 +13,64 @@ require AutoLoader;
 @EXPORT = qw(
 );
 
-#sub AUTOLOAD {
-#    # This AUTOLOAD is used to 'autoload' constants from the constant()
-#    # XS function.  If a constant is not found then control is passed
-#    # to the AUTOLOAD in AutoLoader.
-#
-#    local($constname);
-#    ($constname = $AUTOLOAD) =~ s/.*:://;
+sub AUTOLOAD {
+    # This AUTOLOAD is used to 'autoload' constants from the constant()
+    # XS function.  If a constant is not found then control is passed
+    # to the AUTOLOAD in AutoLoader.
+
+    local($constname);
+    ($constname = $AUTOLOAD) =~ s/.*:://;
+# I can't see why the $_[0] is needed, and I'm getting the following error:
+# Argument "Net::NISPlus::Table" isn't numeric in entersub at blib/lib/Net/NISPlus.pm line 24.
+# so I removed it
 #    $val = constant($constname, @_ ? $_[0] : 0);
-#    if ($! != 0) {
-#	if ($! =~ /Invalid/) {
-#	    $AutoLoader::AUTOLOAD = $AUTOLOAD;
-#	    goto &AutoLoader::AUTOLOAD;
-#	}
-#	else {
-#	    ($pack,$file,$line) = caller;
-#	    die "Your vendor has not defined $pack macro $constname, used at $file line $line.
-#";
-#	}
-#    }
-#    eval "sub $AUTOLOAD { $val }";
-#    goto &$AUTOLOAD;
-#}
+    $val = constant($constname, 0);
+    if ($! != 0) {
+	if ($! =~ /Invalid/) {
+	    $AutoLoader::AUTOLOAD = $AUTOLOAD;
+	    goto &AutoLoader::AUTOLOAD;
+	}
+	else {
+	    ($pack,$file,$line) = caller;
+	    die "Your vendor has not defined $pack macro $constname, used at $file line $line.
+";
+	}
+    }
+    eval "sub $AUTOLOAD { $val }";
+    goto &$AUTOLOAD;
+}
 
 bootstrap Net::NISPlus;
 
 # Preloaded methods go here.  Autoload methods go after __END__, and are
 # processed by the autosplit program.
 
-$Debug = 0;
+sub WarningsOn { $Warnings = 1; undef; }
+sub WarningsOff { $Warnings = 0; undef; }
+sub DebugOn { $Debug = 1; undef; }
+sub DebugOff { $Debug = 0; undef; }
+
+DebugOff;
+WarningsOff;
+
+sub prdebug
+{
+  $debmsg = sprintf shift, @_;
+  warn(sprintf("Debug: %s from %s, line %d\n", caller(1))) if $Debug;
+  warn("$debmsg\n") if $Debug;
+}
+
+sub prwarning
+{
+  $errmsg = sprintf shift,@_;
+  warn(sprintf("Warning: %s from %s, line %d\n", caller(1))) if $Warnings;
+  warn($errmsg."\n") if $Warnings;
+}
+
+sub lasterr
+{
+  $errmsg;
+}
 
 sub rights2str
 {
@@ -115,14 +144,15 @@ sub type
   my($val) = shift;
   foreach (nis_getnames($val))
   {
-#    print "  $_ (", obj_type($_), ")\n";
-    if (obj_type($_) == &TABLE_OBJ) { return "TABLE"; };
-    if (obj_type($_) == &ENTRY_OBJ) { return "ENTRY"; };
-    if (obj_type($_) == &DIRECTORY_OBJ) { return "DIRECTORY"; };
-    if (obj_type($_) == &NO_OBJ) { return "NO"; };
-    if (obj_type($_) == &GROUP_OBJ) { return "GROUP"; };
-    if (obj_type($_) == &LINK_OBJ) { return "LINK"; };
-    if (obj_type($_) == &PRIVATE_OBJ) { return "PRIVATE"; };
+    my($type) = obj_type($_);
+    next unless defined($type);
+    return "TABLE"	if $type == &TABLE_OBJ;
+    return "ENTRY"	if $type == &ENTRY_OBJ;
+    return "DIRECTORY"	if $type == &DIRECTORY_OBJ;
+    return "NO"		if $type == &NO_OBJ;
+    return "GROUP"	if $type == &GROUP_OBJ;
+    return "LINK"	if $type == &LINK_OBJ;
+    return "PRIVATE"	if $type == &PRIVATE_OBJ;
   }
   return "UNKNOWN";
 }

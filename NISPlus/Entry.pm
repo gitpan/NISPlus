@@ -1,4 +1,4 @@
-# $Id: Entry.pm,v 1.2 1996/11/25 22:04:43 rik Exp $
+# $Id: Entry.pm,v 1.3 1997/02/07 11:32:41 rik Exp $
 
 require Net::NISPlus::Object;
 
@@ -48,7 +48,7 @@ sub setinfo
   ($ret, $res) = Net::NISPlus::table_setinfo($srchstring, $info);
   if ($ret != 0)
   {
-    warn("setinfo error: ", Net::NISPlus::nis_sperrno($ret), " ($ret)\n");
+    Net::NISPlus::prwarning("setinfo error: ", Net::NISPlus::nis_sperrno($ret), " ($ret)\n");
     return ();
   }
   else

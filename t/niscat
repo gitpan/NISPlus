@@ -1,6 +1,6 @@
 #!/usr/local/bin/perl -w
 
-BEGIN { unshift(@INC, "../blib", "./blib"); }
+#BEGIN { unshift(@INC, "../blib/lib", "./blib/lib", "../blib/arch"); }
 use Net::NISPlus::Directory;
 use Net::NISPlus::Table;
 use Getopt::Std;
@@ -47,7 +47,14 @@ getopts("DAhLMPvo");
 
 if (($opt_h || $opt_v) && ($opt_P || $opt_o)) { die $usage; };
 
+chop($os=`uname -r`);
+$style = 1 if $os eq "5.3";
+$style = 1 if $os eq "5.4";
+$style = 2 if $os eq "5.5";
+$style = 2 if $os eq "5.5.1";
+
 print "#ARGV = $#ARGV\n" if $opt_D;
+print "os = $os\n" if $opt_D;
 foreach $tname (@ARGV)
 {
   if ($opt_o)
@@ -107,7 +114,7 @@ foreach $tname (@ARGV)
               foreach $col ($[..$#colnames)
               {
                 print
-                  "\t[", $col+1, "] - [",
+                  "\t[", $col, "] - [",
                   length($entry->{$colnames[$col]}) + 1, " bytes",
                   "] '$entry->{$colnames[$col]}'\n";
               }
@@ -121,7 +128,7 @@ foreach $tname (@ARGV)
       }
       else
       {
-        die "$tablename: Not found.\n";
+        die "$tname: Not found.\n";
       }
     }
   }
@@ -146,20 +153,25 @@ foreach $tname (@ARGV)
     }
     else
     {
-      die "$tablename: Not found.\n";
+      die "$tname: Not found.\n";
     }
   }
 }
 
 sub common
 {
+  local($ctime, $mtime) = unpack('N2', $info->{'oid'});
+
   print "Object Name   : $info->{'name'}\n";
+  print "Directory     : $info->{'domain'}\n" if $style == 2;
   print "Owner         : $info->{'owner'}\n";
 # niscat has some tabs in odd placess...
   print "Group\t      : $info->{'group'}\n";
-  print "Domain        : $info->{'domain'}\n";
+  print "Domain        : $info->{'domain'}\n" if $style == 1;
   print "Access Rights : ", Net::NISPlus::rights2str($info->{'access'}), "\n";
   print "Time to Live  : ", Net::NISPlus::ttl2str($info->{'ttl'}), "\n";
+  print "Creation Time : ", scalar localtime($ctime), "\n" if $style == 2;
+  print "Mod. Time     : ", scalar localtime($mtime), "\n" if $style == 2;
   print "Object Type   : $info->{'type'}\n";
 }
 

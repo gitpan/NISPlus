@@ -1,6 +1,6 @@
-# $Id: Object.pm,v 1.4 1996/03/13 12:58:32 rik Exp $
+# $Id: Object.pm,v 1.5 1997/02/07 11:32:41 rik Exp $
 
-require Net::NISPlus;
+BEGIN { require Net::NISPlus; };
 
 package Net::NISPlus::Object;
 
@@ -19,8 +19,8 @@ sub object
   {
     if ( !($me->{'object'} = Net::NISPlus::nis_lookup($me->{'full_path'})))
     {
-      die "can't look up object $me->{'full_path'}: ",
-        Net::NISPlus::nis_sperrno(Net::NISPlus::last_error);
+      Net::NISPlus::prwarning("can't look up object $me->{'full_path'}: ",
+        Net::NISPlus::nis_sperrno(Net::NISPlus::last_error));
     }
   }
   $me->{'object'};
@@ -32,3 +32,5 @@ sub type
 
   Net::NISPlus::obj_type($me->object);
 }
+
+1;

@@ -1,3 +1,40 @@
+**** Version 0.06 alpha released
+
+Cleaned up a lot of memory leaks ["Philip A. Prindeville" <philipp@ntex.com>]
+
+More code commenting
+
+added proper Perl tests in the t directory
+
+removed 'system' kludge from t/table.export.  It now does everything
+via the NISPlus module.  (still doesn't do group_org)
+
+added Net::NISPlus::Table::fullPath to return the full path of the
+current table
+
+added Net::NISPlus::Table::isColname to test whether the argument is
+the name of a column in the table (used internally, but may be useful)
+
+Changes some NULLs to sv_undefs so that the arrays coming back from
+various functions had undefs in them and didn't give 'undefined value'
+errors.
+
+several silly bug fixes
+ 
+added Net::NISPlus::prdebug and Net::NISPlus::prwarning functions,
+$Net::NISPlus::Warning variable and changed all print/warn messages in
+perl code to use them
+["Philip A. Prindeville" <philipp@ntex.com>]
+ 
+modified niscat to work with both old form of output (2.3/2.4) and new
+form (2.5+)
+ 
+added Net::NISPlus::Table::next_entry and
+Net::NISPlus::Table::first_entry
+["Philip A. Prindeville" <philipp@ntex.com>]
+ 
+added Net::NISPlus::nis_add
+
 **** Version 0.05 alpha released
 
 added $Net::NISPlus::Debug variable to control output of
